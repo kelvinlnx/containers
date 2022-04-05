@@ -5,8 +5,8 @@
 	Description:	A simple program in GNU Assembler(GAS) to demonstrate injection attack
 	
 	Step 1 Compile:	as -o hackme.o hackme.s
-	Step 2 Link:	ld -o hackme hackme.o
-	Step 3 Run:	./hackme
+	Step 2    Link:	ld -o hackme hackme.o
+	Step 3     Run:	./hackme
 */
 
 .global _start				# .global SECTION DECLARATION
