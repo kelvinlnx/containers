@@ -1,0 +1,78 @@
+#!/bin/bash
+# Warning! This script only copies the shared libraries required by the listed commands.
+# It will not copy any plugin and libraries needed by those plugins.
+
+echo "Base Container Builder"
+echo -e "======================\n"
+read -p "Base Dir to create: " root_dir
+
+if [ ! -d "$root_dir" ]; then
+	read -p "$root_dir doesn't exists. Do you want to create this dir (y/n)? " choice
+	choice=`echo $choice | tr [:lower:] [:upper:]`
+
+	case "$choice" in 
+		"Y")
+			mkdir $root_dir
+		        echo -e "\n\n"
+			;;
+		"N")
+			echo -e "Unable to proceed without $choice\n\n" >&2
+			exit 0
+			;;
+		*)
+			echo -e 'ERROR!!! Invalid entry!!! Exiting'"\n\n" >&2
+			exit 1
+			;;
+	esac
+fi
+
+read -p "Commands to add (separate each command with a space): " cmd_list
+
+cmd_list="${cmd_list#"${cmd_list%%[![:space:]]*}"}"	# remocve leading spaces
+cmd_list="${cmd_list%"${cmd_list##*[![:space:]]}"}"	# remove trailing spaces
+
+new_list=""
+err_list=""
+
+for ITEM in $cmd_list; do
+	which $ITEM &> /dev/null && new_list="$ITEM $new_list" || err_list="$ITEM $err_list"
+done
+
+if [ -n "$err_list" ]; then
+	echo -en "\n\nUnable to process the following command(s). "
+	echo "Either they are built in and doesn't need to be added or they are not installed:"
+	echo $err_list
+fi
+
+echo -e "\n\nCommands to be processed: "
+if [ -z "$new_list" ]; then
+	echo -e "No commands left in list\n\n"
+	exit 0
+else
+	echo -e "$new_list\n\n"
+fi
+
+echo "Processing..."
+
+lib_list=$(ldd `which $new_list` 2> /dev/null | grep '/.* ' -o | sort -u)
+
+old_pwd=`pwd`
+cd $root_dir
+
+mkdir -p `which $new_list | rev | cut -f2- -d/ | rev | sort -u | cut -c2-` \
+	 `echo "$lib_list" | rev | cut -f2- -d/ | rev | sort -u | cut -c2-`
+
+for ITEM in `which $new_list`; do
+	cp -L $ITEM `echo $ITEM | rev | cut -f2- -d/ | rev | cut -c2-`
+done
+
+for ITEM in $lib_list; do
+	cp -L $ITEM `echo $ITEM | rev | cut -f2- -d/ | rev | cut -c2-`
+done
+
+[ -d bin ] || ln -s usr/bin bin
+[ -d sbin ] || ln -s usr/sbin sbin
+cd $old_pwd
+
+echo "Success"
+exit 0
