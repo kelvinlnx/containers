@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-updater-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-updater-demo
+  template:
+    metadata:
+      labels:
+        app: config-updater-demo
+    spec:
+      volumes:
+        - name: config-volume
+          emptyDir: {}  # Shared volume
+        - name: configmap-volume
+          configMap:
+            name: app-config
+      containers:
+        # Primary Container
+        - name: primary-container
+          image: nginx:latest
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config  # Mount shared volume
+          ports:
+            - containerPort: 80
+          command: ["/bin/sh", "-c"]
+          args:
+            - while true; do
+                echo "Configuration:"
+                cat /etc/config/app.properties;
+                sleep 5;
+              done;
+
+        # Sidecar Container
+        - name: sidecar-container
+          image: busybox:latest
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+            - name: configmap-volume
+              mountPath: /etc/configmap
+          command: ["/bin/sh", "-c"]
+          args:
+            - while true; do
+                cp /etc/configmap/app.properties /etc/config/app.properties;
+                echo "Config updated at $(date)";
+                sleep 5;
+              done;
