@@ -30,7 +30,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - while true; do
-                echo "Configuration:"
+                echo "Configuration:";
                 cat /etc/config/app.properties;
                 sleep 5;
               done;
