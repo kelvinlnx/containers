@@ -1,21 +1,14 @@
 # Base image
-FROM python:3.9-slim
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    APP_CONFIG_FILE=/app/config/config.json
+FROM hashicorp/vault:1.13.2
 
 # Set working directory
-WORKDIR /app
+WORKDIR /etc/vault
 
-# Copy application code
-COPY app/ .
+# Copy custom Vault configuration
+COPY config.hcl /etc/vault/config.hcl
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Expose Vault HTTP port (8200 is default)
+EXPOSE 8200
 
-# Expose the application port
-EXPOSE 5000
-
-# Run the application
-CMD ["python", "app.py"]
+# Run Vault agent in a loop
+CMD ["vault", "agent", "-config=/etc/vault/config.hcl"]
